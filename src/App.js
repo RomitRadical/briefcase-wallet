@@ -1,13 +1,20 @@
 import React, { Component } from "react";
+import Main from "./screens/main";
 
-class App extends Component {
+export default class App extends Component {
   render() {
     return (
-      <div>
+      <div style={styles.container}>
         <h1>Briefcase</h1>
+        <Main />
       </div>
     );
   }
 }
 
-export default App;
+const styles = {
+  container: {
+    backgroundColor: "#0292CE",
+    color: "white"
+  }
+};
