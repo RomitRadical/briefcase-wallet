@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import NavBar from "./components/tools/navbar/navbar";
 import Main from "./screens/main";
+import { createWallet } from "./scripts/bitcoincash";
 
 export default class App extends Component {
   constructor(props) {
@@ -9,6 +10,14 @@ export default class App extends Component {
     this.state = {
       collapsed: false
     };
+  }
+
+  componentWillMount() {
+    let wallet = localStorage.getItem("wallet");
+    if (!wallet) {
+      createWallet();
+    }
+    console.log(localStorage.getItem("wallet"));
   }
 
   toggleNavbar() {
