@@ -1,24 +1,30 @@
 import React, { Component } from "react";
-import { Jumbotron, Button } from "reactstrap";
+import { Jumbotron } from "reactstrap";
 
 export default class Main extends Component {
   constructor(props) {
     super(props);
     this.state = {
       balance: 0.0,
+      symbol: "₿",
+      fiatBalance: 0.0,
       fiatSymbol: "₹"
     };
   }
   render() {
-    let { fiatSymbol, balance } = this.state;
+    let { balance, symbol, fiatSymbol, fiatBalance } = this.state;
     return (
       <div>
         <Jumbotron style={styles.container}>
           <h1 style={styles.text} className="display-4">
-            Balance: {fiatSymbol}
-            {balance}
+            {fiatSymbol}
+            {fiatBalance.toFixed(2)}
           </h1>
-          <hr className="my-0" />
+          <hr className="my-2" />
+          <h3 style={styles.text}>
+            {symbol}
+            {balance.toFixed(2)}
+          </h3>
         </Jumbotron>
       </div>
     );

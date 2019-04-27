@@ -1,14 +1,15 @@
 import React, { Component } from "react";
 import NavBar from "./components/tools/navbar/navbar";
 import Main from "./screens/main";
-import { createWallet } from "./scripts/bitcoincash";
+import { createWallet, initWallet } from "./scripts/bitcoincash";
 
 export default class App extends Component {
   constructor(props) {
     super(props);
     this.toggleNavbar = this.toggleNavbar.bind(this);
     this.state = {
-      collapsed: false
+      collapsed: false,
+      addr: ""
     };
   }
 
@@ -17,8 +18,13 @@ export default class App extends Component {
     if (!wallet) {
       createWallet();
     }
-    console.log(localStorage.getItem("wallet"));
+    let addr = initWallet(localStorage.getItem("wallet"));
+    this.setState({
+      addr
+    });
   }
+
+  componentDidMount() {}
 
   toggleNavbar() {
     this.setState({
