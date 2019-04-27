@@ -1,3 +1,3 @@
-#Briefcase Wallet
+Briefcase Wallet
 
 - A Bitcoin Cash Wallet
