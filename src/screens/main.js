@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 
-class Main extends Component {
+export default class Main extends Component {
   render() {
     return (
       <div style={styles.container}>
@@ -9,7 +9,6 @@ class Main extends Component {
     );
   }
 }
-export default Main;
 
 const styles = {
   container: {
