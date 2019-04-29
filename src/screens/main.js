@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { Jumbotron } from "reactstrap";
+import { Divider } from "semantic-ui-react";
 
 export default class Main extends Component {
   constructor(props) {
@@ -20,11 +21,12 @@ export default class Main extends Component {
             {fiatSymbol}
             {fiatBalance.toFixed(2)}
           </h1>
-          <hr className="my-2" />
+          {/* <hr className="my-2" />
           <h3 style={styles.text}>
             {symbol}
             {balance.toFixed(2)}
-          </h3>
+    </h3>*/}
+          <Divider horizontal>History</Divider>
         </Jumbotron>
       </div>
     );

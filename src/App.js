@@ -1,5 +1,6 @@
 import React, { Component } from "react";
-import NavBar from "./components/tools/navbar/navbar";
+import Header from "./components/tools/navbars/header";
+import Footer from "./components/tools/navbars/footer";
 import Main from "./screens/main";
 import { createWallet, initWallet } from "./scripts/bitcoincash";
 
@@ -9,6 +10,7 @@ export default class App extends Component {
     this.toggleNavbar = this.toggleNavbar.bind(this);
     this.state = {
       collapsed: false,
+      value: 0,
       addr: ""
     };
   }
@@ -32,11 +34,17 @@ export default class App extends Component {
     });
   }
 
+  handleChange = (event, value) => {
+    this.setState({ value });
+  };
+
   render() {
     return (
       <div style={styles.container}>
-        <NavBar isOpen={this.state.collapsed} onClick={this.toggleNavbar} />
+        <Header isOpen={this.state.collapsed} onClick={this.toggleNavbar} />
         <Main />
+        <div style={styles.spacer} />
+        <Footer />
       </div>
     );
   }
@@ -44,7 +52,13 @@ export default class App extends Component {
 
 const styles = {
   container: {
-    backgroundColor: "#0292CE",
-    color: "white"
+    display: "flex",
+    flexDirection: "column",
+    backgroundColor: "white",
+    color: "white",
+    minHeight: "100vh"
+  },
+  spacer: {
+    flex: "1"
   }
 };

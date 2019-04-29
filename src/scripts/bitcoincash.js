@@ -16,3 +16,11 @@ export function initWallet(seed) {
   let cashAddress = BITBOX.HDNode.toCashAddress(change);
   return cashAddress;
 }
+
+export function getPrice(currency) {
+  if (!currency) {
+    currency = "INR";
+  }
+  let price = BITBOX.Price.current(currency);
+  return price;
+}
