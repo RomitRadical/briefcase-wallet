@@ -1,6 +1,4 @@
 import React, { Component } from "react";
-import { Jumbotron } from "reactstrap";
-import { Divider } from "semantic-ui-react";
 
 export default class Main extends Component {
   constructor(props) {
@@ -15,19 +13,17 @@ export default class Main extends Component {
   render() {
     let { balance, symbol, fiatSymbol, fiatBalance } = this.state;
     return (
-      <div>
-        <Jumbotron style={styles.container}>
-          <h1 style={styles.text} className="display-4">
+      <div style={styles.container}>
+        <div style={styles.box}>
+          <h2 style={styles.text} className="display-4">
             {fiatSymbol}
             {fiatBalance.toFixed(2)}
-          </h1>
-          {/* <hr className="my-2" />
+          </h2>
           <h3 style={styles.text}>
             {symbol}
             {balance.toFixed(2)}
-    </h3>*/}
-          <Divider horizontal>History</Divider>
-        </Jumbotron>
+          </h3>
+        </div>
       </div>
     );
   }
@@ -35,12 +31,24 @@ export default class Main extends Component {
 
 const styles = {
   container: {
-    backgroundColor: "white",
+    backgroundColor: "#0492CE",
     textAlign: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    borderBottomLeftRadius: "25px",
+    borderBottomRightRadius: "25px"
   },
   text: {
-    color: "black",
-    fontFamily: "Questrial"
+    color: "white",
+    fontFamily: "Questrial",
+    margin: "0px"
+  },
+  mainText: {
+    color: "white",
+    fontFamily: "Questrial",
+    marginBottom: "0"
+  },
+  box: {
+    marginTop: "20px",
+    marginBottom: "10px"
   }
 };

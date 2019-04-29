@@ -1,7 +1,9 @@
 import React, { Component } from "react";
 import Header from "./components/tools/navbars/header";
-import Footer from "./components/tools/navbars/footer";
 import Main from "./screens/main";
+import History from "./screens/history";
+import Send from "./screens/send";
+
 import { createWallet, initWallet } from "./scripts/bitcoincash";
 
 export default class App extends Component {
@@ -43,8 +45,7 @@ export default class App extends Component {
       <div style={styles.container}>
         <Header isOpen={this.state.collapsed} onClick={this.toggleNavbar} />
         <Main />
-        <div style={styles.spacer} />
-        <Footer />
+        <h1>send</h1>
       </div>
     );
   }
