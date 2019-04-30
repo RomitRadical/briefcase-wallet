@@ -11,6 +11,7 @@
     "antd": "^3.16.6",
     "bitbox-sdk": "^5.1.1",
     "bootstrap": "^4.3.1",
+    "qrcode.react": "^0.9.3",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "react-fontawesome": "^1.6.1",

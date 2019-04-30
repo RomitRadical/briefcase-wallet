@@ -1,10 +1,13 @@
 import React, { Component } from "react";
+import { Divider } from "semantic-ui-react";
 
 class Send extends Component {
   render() {
     return (
       <div style={styles.container}>
-        <h1>Send</h1>
+        <Divider style={styles.container} horizontal>
+          Send
+        </Divider>
       </div>
     );
   }
@@ -15,6 +18,7 @@ const styles = {
   container: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    color: "black"
   }
 };
