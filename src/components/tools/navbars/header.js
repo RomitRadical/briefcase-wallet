@@ -18,7 +18,7 @@ const Header = props => {
   return (
     <div>
       <Navbar style={styles.container} light>
-        <NavbarBrand style={styles.headerText} href="/" className="mr-auto">
+        <NavbarBrand style={styles.headerText} className="mr-auto">
           <FontAwesomeIcon icon="briefcase" /> Briefcase
         </NavbarBrand>
         <NavbarToggler
@@ -29,13 +29,18 @@ const Header = props => {
         <Collapse isOpen={props.isOpen} navbar>
           <Nav navbar>
             <NavItem>
+              <NavLink style={styles.text} href="/">
+                Wallet
+              </NavLink>
+            </NavItem>
+            <NavItem>
               <NavLink style={styles.text} href="/settings">
                 Settings
               </NavLink>
             </NavItem>
             <NavItem>
-              <NavLink style={styles.text} href="/help">
-                Help
+              <NavLink style={styles.text} href="/about">
+                About
               </NavLink>
             </NavItem>
           </Nav>

@@ -1,0 +1,7 @@
+{
+  "appId": "com.equinox.briefcase",
+  "appName": "briefcase",
+  "bundledWebRuntime": false,
+  "npmClient": "npm",
+  "webDir": "build"
+}

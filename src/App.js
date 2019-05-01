@@ -1,11 +1,9 @@
 import React, { Component } from "react";
+import { BrowserRouter as Router, Route } from "react-router-dom";
 import Header from "./components/tools/navbars/header";
 import Main from "./screens/main";
-import History from "./screens/history";
-import Send from "./screens/send";
-import Receive from "./screens/receive";
-import SwipeableViews from "react-swipeable-views";
-
+import Settings from "./screens/settings";
+import About from "./screens/about";
 import { createWallet, initWallet } from "./scripts/bitcoincash";
 
 export default class App extends Component {
@@ -23,8 +21,8 @@ export default class App extends Component {
     let wallet = localStorage.getItem("wallet");
     if (!wallet) {
       console.log("No wallet detected");
-      createWallet();
-      console.log("New wallet created");
+      let seed = createWallet();
+      console.log("New wallet created: " + seed);
     }
     let addr = initWallet(localStorage.getItem("wallet"));
     this.setState({
@@ -32,35 +30,22 @@ export default class App extends Component {
     });
   }
 
-  componentDidMount() {}
-
   toggleNavbar() {
     this.setState({
       collapsed: !this.state.collapsed
     });
   }
 
-  handleChange = value => {
-    this.setState({ value });
-  };
-
   render() {
     return (
-      <div style={styles.container}>
-        <Header isOpen={this.state.collapsed} onClick={this.toggleNavbar} />
-        <Main />
-        <SwipeableViews index={1} resistance enableMouseEvents>
-          <div style={Object.assign({}, styles.tabs, styles.tab1)}>
-            <Send />
-          </div>
-          <div style={Object.assign({}, styles.tabs, styles.tab2)}>
-            <History />
-          </div>
-          <div style={Object.assign({}, styles.tabs, styles.tab3)}>
-            <Receive />
-          </div>
-        </SwipeableViews>
-      </div>
+      <Router>
+        <div style={styles.container}>
+          <Header isOpen={this.state.collapsed} onClick={this.toggleNavbar} />
+          <Route path="/" exact component={Main} />
+          <Route path="/settings/" component={Settings} />
+          <Route path="/about/" component={About} />
+        </div>
+      </Router>
     );
   }
 }
@@ -68,6 +53,7 @@ export default class App extends Component {
 const styles = {
   container: {
     display: "flex",
+    fontFamily: "Questrial",
     flexDirection: "column",
     backgroundColor: "white",
     color: "black",

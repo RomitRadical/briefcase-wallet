@@ -20,18 +20,26 @@ export default class Receive extends Component {
     });
   }
 
+  copyAddress = () => {
+    navigator.clipboard.writeText(this.state.addr);
+    console.log("Address copied");
+  };
+
   render() {
     let { addr } = this.state;
     return (
       <div style={styles.container}>
-        <Divider style={styles.container} horizontal>
-          Receive
-        </Divider>
+        <Divider horizontal>Receive</Divider>
         <div>
-          <h3>Your Bitcoin Cash Address:</h3>
-          <QRCode value={addr} />
+          <h4>Your Bitcoin Cash Address:</h4>
+          <QRCode style={styles.qr} value={addr} />
+          <div>{addr}</div>
           <div>
-            <Button style={styles.button} shape="round">
+            <Button
+              style={styles.button}
+              shape="round"
+              onClick={this.copyAddress}
+            >
               Copy
             </Button>
           </div>
@@ -43,13 +51,19 @@ export default class Receive extends Component {
 
 const styles = {
   container: {
+    flex: 1,
     textAlign: "center",
-    color: "black"
+    color: "black",
+    maxWidth: "500px",
+    margin: "0 auto"
   },
   button: {
     backgroundColor: "#0492CE",
     color: "white",
     marginTop: "10px",
     padding: "0 50px"
+  },
+  qr: {
+    marginTop: "5px"
   }
 };

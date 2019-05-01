@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { Divider } from "semantic-ui-react";
 
-class History extends Component {
+export default class History extends Component {
   render() {
     return (
       <div style={styles.container}>
@@ -10,12 +10,13 @@ class History extends Component {
     );
   }
 }
-export default History;
 
 const styles = {
   container: {
     flex: 1,
+    color: "black",
     alignItems: "center",
-    justifyContent: "center"
+    maxWidth: "500px",
+    margin: "0 auto"
   }
 };

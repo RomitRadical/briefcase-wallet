@@ -1,113 +1,47 @@
 import React, { Component } from "react";
-import { initWallet } from "../scripts/bitcoincash";
-
-let BITBOXSDK = require("bitbox-sdk");
-let BITBOX = new BITBOXSDK({
-  restURL: "https://trest.bitcoin.com/v2/"
-});
+import Balance from "./balance";
+import History from "./history";
+import Send from "./send";
+import Receive from "./receive";
+import SwipeableViews from "react-swipeable-views";
 
 export default class Main extends Component {
   constructor(props) {
     super(props);
+    this.toggleNavbar = this.toggleNavbar.bind(this);
     this.state = {
-      bal: 0,
-      fiatBal: 0,
-      newBal: 0,
-      symbol: "₿",
-      fiatSymbol: "₹",
-      price: ""
+      collapsed: false,
+      value: 0,
+      addr: ""
     };
   }
 
-  componentWillMount() {
-    let addr = initWallet(localStorage.getItem("wallet"));
-    this.getPrice();
-    this.getBalance(addr);
+  toggleNavbar() {
+    this.setState({
+      collapsed: !this.state.collapsed
+    });
   }
 
-  componentDidMount() {
-    setInterval(this.getPrice, 10000);
-    setInterval(this.checkNewTx, 1000);
-  }
-
-  getPrice = () => {
-    let currency = localStorage.getItem("currency");
-    if (!currency) {
-      currency = "INR";
-    }
-    (async () => {
-      try {
-        let price = await BITBOX.Price.current(currency);
-        if (!price) {
-          console.log("Network Error: Price cannot be fetched");
-          return false;
-        }
-        this.setState({
-          price
-        });
-        return true;
-      } catch (error) {
-        console.error(error);
-      }
-    })();
-  };
-
-  getBalance = addr => {
-    (async () => {
-      try {
-        let details = await BITBOX.Address.details(addr);
-        let price = this.state.price;
-        this.setState({
-          bal: Number(details.balance + details.unconfirmedBalance),
-          fiatBal: (details.balance + details.unconfirmedBalance) * price
-        });
-      } catch (err) {
-        console.log(err);
-      }
-    })();
-  };
-
-  checkNewTx = () => {
-    (async () => {
-      try {
-        let addr = initWallet(localStorage.getItem("wallet"));
-        let details = await BITBOX.Address.details(addr);
-        let price = this.state.price;
-        if (details.balance + details.unconfirmedBalance > this.state.bal) {
-          console.log("New payment received");
-          this.setState({
-            bal: Number(details.balance + details.unconfirmedBalance),
-            fiatBal: (details.balance + details.unconfirmedBalance) * price
-          });
-        } else if (
-          details.balance + details.unconfirmedBalance <
-          this.state.bal
-        ) {
-          console.log("Payment sent");
-          this.setState({
-            bal: Number(details.balance + details.unconfirmedBalance),
-            fiatBal: (details.balance + details.unconfirmedBalance) * price
-          });
-        }
-      } catch (err) {
-        console.log(err);
-      }
-    })();
+  handleChange = value => {
+    this.setState({ value });
   };
 
   render() {
-    let { bal, fiatBal, symbol, fiatSymbol } = this.state;
     return (
       <div style={styles.container}>
-        <div style={styles.box}>
-          <h2 style={styles.text} className="display-4">
-            {fiatSymbol}
-            {fiatBal.toFixed(2)}
-          </h2>
-          <h3 style={styles.text}>
-            {symbol}
-            {bal.toFixed(8)}
-          </h3>
+        <Balance />
+        <div>
+          <SwipeableViews index={1} resistance enableMouseEvents>
+            <div style={Object.assign({}, styles.tabs, styles.tab1)}>
+              <Send />
+            </div>
+            <div style={Object.assign({}, styles.tabs, styles.tab2)}>
+              <History />
+            </div>
+            <div style={Object.assign({}, styles.tabs, styles.tab3)}>
+              <Receive />
+            </div>
+          </SwipeableViews>
         </div>
       </div>
     );
@@ -116,24 +50,27 @@ export default class Main extends Component {
 
 const styles = {
   container: {
-    backgroundColor: "#0492CE",
+    display: "flex",
     textAlign: "center",
-    justifyContent: "center",
-    borderBottomLeftRadius: "50px",
-    borderBottomRightRadius: "50px"
-  },
-  text: {
-    color: "white",
     fontFamily: "Questrial",
-    margin: "0px"
+    flexDirection: "column",
+    backgroundColor: "white",
+    color: "black"
   },
-  mainText: {
-    color: "white",
-    fontFamily: "Questrial",
-    marginBottom: "0"
+  tabs: {
+    padding: 15,
+    minHeight: 100,
+    color: "#fff"
   },
-  box: {
-    marginTop: "20px",
-    marginBottom: "10px"
+  tab1: {
+    backgroundColor: "white"
+  },
+  tab2: {
+    backgroundColor: "white",
+    overflow: ""
+  },
+  tab3: {
+    backgroundColor: "white",
+    overflow: "hidden"
   }
 };
