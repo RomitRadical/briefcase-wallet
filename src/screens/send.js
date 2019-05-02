@@ -23,8 +23,12 @@ export default class Send extends Component {
     });
   };
 
+  onSend = () => {
+    console.log("Send");
+  };
+
   render() {
-    let fiatSymbol = localStorage.getItem("currency");
+    let fiatSymbol = localStorage.getItem("fiat-symbol");
     if (!fiatSymbol) {
       fiatSymbol = "₹";
     }
@@ -32,18 +36,25 @@ export default class Send extends Component {
       <div style={styles.container}>
         <Divider horizontal>Send</Divider>
         <Input
+          size="large"
           style={styles.input}
           prefix={<Icon type="user" />}
           placeholder="Enter Bitcoin Cash Address"
           onChange={this.onAddressEnter}
         />
         <Input
+          size="large"
           style={styles.input}
           prefix={fiatSymbol}
           placeholder="Enter Amount to Send"
           onChange={this.onAmountEnter}
         />
-        <Button style={styles.button} shape="round">
+        <Button
+          size="large"
+          style={styles.button}
+          shape="round"
+          onClick={this.onSend}
+        >
           Send
         </Button>
       </div>
