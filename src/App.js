@@ -5,6 +5,10 @@ import Main from "./screens/main";
 import Settings from "./screens/settings";
 import About from "./screens/about";
 import { createWallet, initWallet } from "./scripts/bitcoincash";
+import { Plugins } from "@capacitor/core";
+const { SplashScreen } = Plugins;
+
+SplashScreen.hide();
 
 export default class App extends Component {
   constructor(props) {

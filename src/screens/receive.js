@@ -4,6 +4,7 @@ import { initWallet } from "../scripts/bitcoincash";
 import { Divider } from "semantic-ui-react";
 import { Button } from "antd";
 import { Plugins } from "@capacitor/core";
+import { isMobile } from "react-device-detect";
 
 const { Share } = Plugins;
 
@@ -25,7 +26,6 @@ export default class Receive extends Component {
 
   copyAddress = () => {
     let { addr } = this.state;
-    //navigator.clipboard.writeText(addr);
     async function copy() {
       try {
         await Share.share({
@@ -39,6 +39,34 @@ export default class Receive extends Component {
     console.log("Address copied");
   };
 
+  renderContent = () => {
+    let { addr } = this.state;
+    if (isMobile) {
+      return (
+        <div>
+          <Button
+            style={styles.button}
+            shape="round"
+            onClick={this.copyAddress}
+          >
+            Share
+          </Button>
+        </div>
+      );
+    }
+    return (
+      <div>
+        <Button
+          style={styles.button}
+          shape="round"
+          onClick={() => navigator.clipboard.writeText(addr)}
+        >
+          Copy
+        </Button>
+      </div>
+    );
+  };
+
   render() {
     let { addr } = this.state;
     return (
@@ -48,15 +76,7 @@ export default class Receive extends Component {
           <h4>Your Bitcoin Cash Address:</h4>
           <QRCode style={styles.qr} value={addr} />
           <div>{addr}</div>
-          <div>
-            <Button
-              style={styles.button}
-              shape="round"
-              onClick={this.copyAddress}
-            >
-              Share
-            </Button>
-          </div>
+          <div>{this.renderContent()}</div>
         </div>
       </div>
     );
