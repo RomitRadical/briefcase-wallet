@@ -3,6 +3,9 @@ import QRCode from "qrcode.react";
 import { initWallet } from "../scripts/bitcoincash";
 import { Divider } from "semantic-ui-react";
 import { Button } from "antd";
+import { Plugins } from "@capacitor/core";
+
+const { Share } = Plugins;
 
 export default class Receive extends Component {
   constructor(props) {
@@ -21,7 +24,18 @@ export default class Receive extends Component {
   }
 
   copyAddress = () => {
-    navigator.clipboard.writeText(this.state.addr);
+    let { addr } = this.state;
+    //navigator.clipboard.writeText(addr);
+    async function copy() {
+      try {
+        await Share.share({
+          title: "Share",
+          text: addr,
+          dialogTitle: "Share your bitcoin cash address"
+        });
+      } catch (err) {}
+    }
+    copy();
     console.log("Address copied");
   };
 
@@ -40,7 +54,7 @@ export default class Receive extends Component {
               shape="round"
               onClick={this.copyAddress}
             >
-              Copy
+              Share
             </Button>
           </div>
         </div>

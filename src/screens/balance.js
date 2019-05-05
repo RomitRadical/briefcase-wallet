@@ -1,9 +1,14 @@
 import React, { Component } from "react";
 import { initWallet } from "../scripts/bitcoincash";
+import { notification, Button } from "antd";
 
 let BITBOXSDK = require("bitbox-sdk");
 let BITBOX = new BITBOXSDK({
   restURL: "https://trest.bitcoin.com/v2/"
+});
+
+notification.config({
+  placement: "bottomRight"
 });
 
 export default class Balance extends Component {
@@ -27,7 +32,7 @@ export default class Balance extends Component {
 
   componentDidMount() {
     setInterval(this.getPrice, 10000);
-    setInterval(this.checkNewTx, 1000);
+    setInterval(this.checkNewTx, 10000);
   }
 
   getPrice = () => {
@@ -88,11 +93,35 @@ export default class Balance extends Component {
             bal: Number(details.balance + details.unconfirmedBalance),
             fiatBal: (details.balance + details.unconfirmedBalance) * price
           });
+        } else {
+          this.setState({
+            fiatBal: (details.balance + details.unconfirmedBalance) * price
+          });
         }
       } catch (err) {
         console.log(err);
       }
     })();
+  };
+
+  newPayment = () => {
+    let { receivedAmount } = this.state;
+    const btn = (
+      <Button type="primary" size="small" onClick={this.openTxDetails}>
+        Details
+      </Button>
+    );
+    const paymentNotification = {
+      message: "New Payment Received",
+      description: `Amount: ${receivedAmount}`,
+      duration: 0,
+      btn
+    };
+    notification.info(paymentNotification);
+  };
+
+  openTxDetails = () => {
+    console.log("Hi");
   };
 
   render() {
