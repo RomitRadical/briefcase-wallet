@@ -6,6 +6,8 @@ import Settings from "./screens/settings";
 import About from "./screens/about";
 import { createWallet, initWallet } from "./scripts/bitcoincash";
 
+localStorage.setItem("network", "testnet");
+
 export default class App extends Component {
   constructor(props) {
     super(props);

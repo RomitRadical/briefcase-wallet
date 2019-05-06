@@ -1,58 +1,154 @@
 import React, { Component } from "react";
+import bitcore from "bitcore-lib-cash";
+import { initWallet } from "../scripts/bitcoincash";
 import { Divider } from "semantic-ui-react";
 import { Input, Icon, Button } from "antd";
+
+let NETWORK = localStorage.getItem("network");
+
+let BITBOXSDK = require("bitbox-sdk");
+
+let BITBOX;
+let utxoURL;
+
+if (NETWORK === "testnet") {
+  BITBOX = new BITBOXSDK({
+    restURL: "https://trest.bitcoin.com/v2/"
+  });
+  utxoURL = "https://trest.bitcoin.com/v2/address/utxo/";
+} else {
+  BITBOX = new BITBOXSDK();
+  utxoURL = "https://rest.bitcoin.com/v2/address/utxo/";
+}
 
 export default class Send extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      address: "",
-      amount: ""
+      loading: false,
+      sendAddr: "",
+      sendAmount: "",
+      fiatSymbol: ""
     };
   }
 
-  onAmountEnter = address => {
-    this.setState({
-      address
-    });
-  };
-
-  onAmountEnter = amount => {
-    this.setState({
-      amount
-    });
-  };
-
-  onSend = () => {
-    console.log("Send");
-  };
-
-  render() {
+  componentWillMount() {
     let fiatSymbol = localStorage.getItem("fiat-symbol");
     if (!fiatSymbol) {
       fiatSymbol = "₹";
     }
+    this.setState({
+      fiatSymbol
+    });
+  }
+
+  scanQRCode = () => {
+    console.log("Scan");
+  };
+
+  onEnterAddress = addr => {
+    this.setState({
+      sendAddr: addr.target.value
+    });
+  };
+
+  onEnterAmount = amount => {
+    this.setState({
+      sendAmount: amount.target.value
+    });
+  };
+
+  onSend = () => {
+    this.setState({ loading: true });
+    let { sendAddr, sendAmount } = this.state;
+    let addr = initWallet(localStorage.getItem("wallet"));
+    let seed = localStorage.getItem("wallet")(async () => {
+      try {
+        //Get the utxo details of the address
+        let utxo = await BITBOX.Address.utxo(addr);
+
+        // Get the wallet's private key
+        let value = new Buffer(seed);
+        let hash = bitcore.crypto.Hash.sha256(value);
+        let bn = bitcore.crypto.BN.fromBuffer(hash);
+        let privateKey = new bitcore.PrivateKey(bn).toString();
+
+        // Add inputs for the transaction
+        let send = {
+          txId: utxo.utxos[0].txid,
+          outputIndex: utxo.utxos[0].vout,
+          address: utxo.cashAddress,
+          script: utxo.scriptPubKey,
+          satoshis: utxo.utxos[0].satoshis
+        };
+
+        // Calulate network fee
+        let byteCount = BITBOX.BitcoinCash.getByteCount(
+          { P2PKH: 1 },
+          { P2PKH: 1 }
+        );
+
+        // Subtract fee from amount to send
+        let sendAmount = utxo.utxos[0].satoshis - byteCount;
+
+        // Get the hex of transaction
+        let hex = new bitcore.Transaction()
+          .from(send)
+          .to(sendAddr, sendAmount)
+          .sign(privateKey);
+        console.log(hex.toString());
+
+        // Broadcast the transaction
+        BITBOX.RawTransactions.sendRawTransaction(hex.toString()).then(
+          result => {
+            console.log(result);
+          },
+          err => {
+            console.log(err);
+          }
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    })();
+    this.setState({ loading: false });
+  };
+
+  render() {
+    let { sendAddr, sendAmount, loading } = this.state;
+    let fiatSymbol = localStorage.getItem("fiat-symbol");
+    if (!fiatSymbol) {
+      fiatSymbol = "₹";
+    }
+
     return (
       <div style={styles.container}>
         <Divider horizontal>Send</Divider>
         <Input
-          size="large"
           style={styles.input}
+          type="text"
+          size="large"
+          placeholder="Address"
+          defaultValue="bitcoincash:"
           prefix={<Icon type="user" />}
-          placeholder="Enter Bitcoin Cash Address"
-          onChange={this.onAddressEnter}
+          suffix={<Icon type="scan" onClick={this.scanQRCode} />}
+          value={sendAddr}
+          onChange={this.onEnterAddress.bind(this)}
         />
         <Input
-          size="large"
           style={styles.input}
-          prefix={fiatSymbol}
-          placeholder="Enter Amount to Send"
-          onChange={this.onAmountEnter}
+          type="number"
+          size="large"
+          placeholder="Amount"
+          prefix="$"
+          value={sendAmount}
+          onChange={this.onEnterAmount.bind(this)}
         />
         <Button
-          size="large"
           style={styles.button}
-          shape="round"
+          size="large"
+          type="primary"
+          loading={loading}
           onClick={this.onSend}
         >
           Send
