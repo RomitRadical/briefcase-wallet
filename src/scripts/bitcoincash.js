@@ -1,12 +1,21 @@
 import bitcore from "bitcore-lib-cash";
 
-let BITBOXSDK = require("bitbox-sdk");
-let BITBOX = new BITBOXSDK({
-  restURL: "https://trest.bitcoin.com/v2/"
-});
-//let NETWORK = "testnet"; // "mainnet"
+let NETWORK = localStorage.getItem("network");
+if (!NETWORK) {
+  NETWORK = "testnet";
+}
 
-bitcore.Networks.defaultNetwork = bitcore.Networks.testnet;
+let BITBOX;
+let BITBOXSDK = require("bitbox-sdk");
+
+if (NETWORK === "testnet") {
+  BITBOX = new BITBOXSDK({
+    restURL: "https://trest.bitcoin.com/v2/"
+  });
+  bitcore.Networks.defaultNetwork = bitcore.Networks.testnet;
+} else {
+  BITBOX = new BITBOXSDK();
+}
 
 export function createWallet() {
   let seed = BITBOX.Mnemonic.generate(128);

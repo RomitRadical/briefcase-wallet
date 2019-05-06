@@ -2,10 +2,21 @@ import React, { Component } from "react";
 import { initWallet } from "../scripts/bitcoincash";
 import { notification, Button } from "antd";
 
+let NETWORK = localStorage.getItem("network");
+if (!NETWORK) {
+  NETWORK = "testnet";
+}
+
+let BITBOX;
 let BITBOXSDK = require("bitbox-sdk");
-let BITBOX = new BITBOXSDK({
-  restURL: "https://trest.bitcoin.com/v2/"
-});
+
+if (NETWORK === "testnet") {
+  BITBOX = new BITBOXSDK({
+    restURL: "https://trest.bitcoin.com/v2/"
+  });
+} else {
+  BITBOX = new BITBOXSDK();
+}
 
 notification.config({
   placement: "bottomRight"

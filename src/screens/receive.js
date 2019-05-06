@@ -58,7 +58,6 @@ export default class Receive extends Component {
       <div>
         <Button
           style={styles.button}
-          shape="round"
           onClick={() => navigator.clipboard.writeText(addr)}
         >
           Copy

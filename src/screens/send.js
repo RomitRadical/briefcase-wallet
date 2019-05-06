@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import bitcore from "bitcore-lib-cash";
 import { initWallet } from "../scripts/bitcoincash";
 import { Divider } from "semantic-ui-react";
-import { Input, Icon, Button } from "antd";
+import { Input, Icon, Button, Popover } from "antd";
 
 let NETWORK = localStorage.getItem("network");
 
@@ -44,6 +44,10 @@ export default class Send extends Component {
 
   scanQRCode = () => {
     console.log("Scan");
+  };
+
+  onMaxAmount = () => {
+    console.log("Max Amount");
   };
 
   onEnterAddress = addr => {
@@ -131,7 +135,16 @@ export default class Send extends Component {
           placeholder="Address"
           defaultValue="bitcoincash:"
           prefix={<Icon type="user" />}
-          suffix={<Icon type="scan" onClick={this.scanQRCode} />}
+          suffix={
+            <div>
+              <Popover
+                content="Click to open camera and scan a qr code"
+                title="Scan QR Code"
+              >
+                <Icon type="scan" onClick={this.scanQRCode} />
+              </Popover>
+            </div>
+          }
           value={sendAddr}
           onChange={this.onEnterAddress.bind(this)}
         />
@@ -141,6 +154,16 @@ export default class Send extends Component {
           size="large"
           placeholder="Amount"
           prefix="$"
+          suffix={
+            <div>
+              <Popover
+                content="Click to send all funds from the wallet"
+                title="Max Amount"
+              >
+                <Icon type="to-top" onClick={this.onMaxAmount} />
+              </Popover>
+            </div>
+          }
           value={sendAmount}
           onChange={this.onEnterAmount.bind(this)}
         />
