@@ -25,7 +25,8 @@ export default class Settings extends Component {
     this.state = {
       fiatCurrency: "",
       displayCurrency: "",
-      importModal: false
+      importModal: false,
+      importSeed: ""
     };
   }
 
@@ -34,7 +35,8 @@ export default class Settings extends Component {
     let displayCurrency = localStorage.getItem("display-currency");
     if (!fiatCurrency) {
       fiatCurrency = "INR";
-    } else if (!displayCurrency) {
+    }
+    if (!displayCurrency) {
       displayCurrency = "Fiat";
     }
     this.setState({
@@ -71,8 +73,22 @@ export default class Settings extends Component {
     });
   };
 
+  onSeedEnter = item => {
+    this.setState({
+      importSeed: item.target.value
+    });
+  };
+
+  importSeed = () => {
+    let { importSeed } = this.state;
+    if (!importSeed) {
+      return console.log("No seed detected");
+    }
+    localStorage.getItem("wallet", importSeed);
+  };
+
   render() {
-    let { fiatCurrency, displayCurrency } = this.state;
+    let { fiatCurrency, displayCurrency, importSeed } = this.state;
     return (
       <div>
         <ListGroup>
@@ -123,7 +139,7 @@ export default class Settings extends Component {
           </ListGroupItem>
           <ListGroupItem>
             <div style={styles.container}>
-              <div>Import/Recover Wallet</div>
+              <div>Recover Wallet</div>
               <div style={styles.spacer} />
               <div>
                 <Icon
@@ -131,10 +147,10 @@ export default class Settings extends Component {
                   onClick={() => this.importModalToggle(true)}
                 />
                 <Modal
-                  title="Import/Recover Wallet"
+                  title="Recover Wallet"
                   centered
                   visible={this.state.importModal}
-                  onOk={() => this.importModalToggle(false)}
+                  onOk={this.importSeed}
                   onCancel={() => this.importModalToggle(false)}
                 >
                   <TextArea
@@ -143,6 +159,8 @@ export default class Settings extends Component {
                       minRows: 3,
                       maxRows: 6
                     }}
+                    value={importSeed}
+                    onChange={this.onSeedEnter.bind(this)}
                   />
                 </Modal>
               </div>

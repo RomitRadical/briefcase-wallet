@@ -74,19 +74,23 @@ export default class Send extends Component {
       transaction,
       byteCount,
       details,
-      change;
+      change,
+      hex;
     currency = localStorage.getItem("currency");
     if (!currency) {
       currency = "INR";
     }
     (async () => {
       try {
+        // Get current BCH price
         price = await BITBOX.Price.current(currency);
         if (!price) {
           console.log("Network Error: Price cannot be fetched");
           return false;
         }
+        // Convert fiat amount to bch amount
         sendAmount /= price;
+        // Convert BCH to satoshis
         sendAmount = BITBOX.BitcoinCash.toSatoshi(sendAmount.toFixed(8));
         addr = initWallet(localStorage.getItem("wallet"));
         seed = localStorage.getItem("wallet");
@@ -94,7 +98,7 @@ export default class Send extends Component {
           try {
             //Get the utxo details of the address
             utxo = await BITBOX.Address.utxo(addr);
-            console.log(utxo);
+            //console.log(utxo);
             // Create a transaction object
             transaction = new bitcore.Transaction();
 
@@ -127,6 +131,7 @@ export default class Send extends Component {
                 { P2PKH: 1 },
                 { P2PKH: 2 }
               );
+              //If change exists send change to self
               transaction.change(addr);
             } else {
               byteCount = BITBOX.BitcoinCash.getByteCount(
@@ -134,14 +139,15 @@ export default class Send extends Component {
                 { P2PKH: 1 }
               );
             }
+            // Add fee to transaction
             transaction
               .fee(byteCount)
-              // Output address and amount
+              // Add the receiving address and amount
               .to(sendAddr, sendAmount)
               // Sign the transaction
               .sign(privateKey);
             // Get the hex of the transaction
-            let hex = transaction.serialize();
+            hex = transaction.serialize();
             if (transaction) {
               //Broadcast the transaction
               BITBOX.RawTransactions.sendRawTransaction(hex).then(
@@ -170,11 +176,7 @@ export default class Send extends Component {
   };
 
   render() {
-    let { sendAddr, sendAmount, loading } = this.state;
-    let fiatSymbol = localStorage.getItem("fiat-symbol");
-    if (!fiatSymbol) {
-      fiatSymbol = "₹";
-    }
+    let { sendAddr, sendAmount, loading, fiatSymbol } = this.state;
 
     return (
       <div style={styles.container}>
