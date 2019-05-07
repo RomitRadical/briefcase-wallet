@@ -50,7 +50,7 @@ export default class History extends Component {
   }
 
   componentDidMount() {
-    //setInterval(this.getPrice, 1000);
+    //setInterval(this.getPrice, 5000);
   }
 
   getPrice = () => {
@@ -137,6 +137,7 @@ export default class History extends Component {
                   isLoading: false
                 });
               });
+            return true;
           });
         }
       });

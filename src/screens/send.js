@@ -9,16 +9,13 @@ let NETWORK = localStorage.getItem("network");
 let BITBOXSDK = require("bitbox-sdk");
 
 let BITBOX;
-let utxoURL;
 
 if (NETWORK === "testnet") {
   BITBOX = new BITBOXSDK({
     restURL: "https://trest.bitcoin.com/v2/"
   });
-  utxoURL = "https://trest.bitcoin.com/v2/address/utxo/";
 } else {
   BITBOX = new BITBOXSDK();
-  utxoURL = "https://rest.bitcoin.com/v2/address/utxo/";
 }
 
 export default class Send extends Component {
@@ -65,57 +62,111 @@ export default class Send extends Component {
   onSend = () => {
     this.setState({ loading: true });
     let { sendAddr, sendAmount } = this.state;
-    let addr = initWallet(localStorage.getItem("wallet"));
-    let seed = localStorage.getItem("wallet")(async () => {
+    let currency,
+      price,
+      addr,
+      seed,
+      utxo,
+      value,
+      hash,
+      bn,
+      privateKey,
+      transaction,
+      byteCount,
+      details,
+      change;
+    currency = localStorage.getItem("currency");
+    if (!currency) {
+      currency = "INR";
+    }
+    (async () => {
       try {
-        //Get the utxo details of the address
-        let utxo = await BITBOX.Address.utxo(addr);
+        price = await BITBOX.Price.current(currency);
+        if (!price) {
+          console.log("Network Error: Price cannot be fetched");
+          return false;
+        }
+        sendAmount /= price;
+        sendAmount = BITBOX.BitcoinCash.toSatoshi(sendAmount.toFixed(8));
+        addr = initWallet(localStorage.getItem("wallet"));
+        seed = localStorage.getItem("wallet");
+        (async () => {
+          try {
+            //Get the utxo details of the address
+            utxo = await BITBOX.Address.utxo(addr);
+            console.log(utxo);
+            // Create a transaction object
+            transaction = new bitcore.Transaction();
 
-        // Get the wallet's private key
-        let value = new Buffer(seed);
-        let hash = bitcore.crypto.Hash.sha256(value);
-        let bn = bitcore.crypto.BN.fromBuffer(hash);
-        let privateKey = new bitcore.PrivateKey(bn).toString();
+            // Get the wallet's private key
+            value = new Buffer(seed);
+            hash = bitcore.crypto.Hash.sha256(value);
+            bn = bitcore.crypto.BN.fromBuffer(hash);
+            privateKey = new bitcore.PrivateKey(bn).toString();
 
-        // Add inputs for the transaction
-        let send = {
-          txId: utxo.utxos[0].txid,
-          outputIndex: utxo.utxos[0].vout,
-          address: utxo.cashAddress,
-          script: utxo.scriptPubKey,
-          satoshis: utxo.utxos[0].satoshis
-        };
+            // Add inputs for the transaction
+            utxo.utxos.map(res => {
+              details = {
+                txId: res.txid,
+                outputIndex: res.vout,
+                address: utxo.cashAddress,
+                script: utxo.scriptPubKey,
+                satoshis: res.satoshis
+              };
+              console.log(details);
+              transaction.from(details);
+              if (sendAmount < res.satoshis) {
+                return;
+              }
+            });
 
-        // Calulate network fee
-        let byteCount = BITBOX.BitcoinCash.getByteCount(
-          { P2PKH: 1 },
-          { P2PKH: 1 }
-        );
-
-        // Subtract fee from amount to send
-        let sendAmount = utxo.utxos[0].satoshis - byteCount;
-
-        // Get the hex of transaction
-        let hex = new bitcore.Transaction()
-          .from(send)
-          .to(sendAddr, sendAmount)
-          .sign(privateKey);
-        console.log(hex.toString());
-
-        // Broadcast the transaction
-        BITBOX.RawTransactions.sendRawTransaction(hex.toString()).then(
-          result => {
-            console.log(result);
-          },
-          err => {
-            console.log(err);
+            // Calulate network fee
+            change = details.satoshis - sendAmount;
+            if (change > 0) {
+              byteCount = BITBOX.BitcoinCash.getByteCount(
+                { P2PKH: 1 },
+                { P2PKH: 2 }
+              );
+              transaction.change(addr);
+            } else {
+              byteCount = BITBOX.BitcoinCash.getByteCount(
+                { P2PKH: 1 },
+                { P2PKH: 1 }
+              );
+            }
+            transaction
+              .fee(byteCount)
+              // Output address and amount
+              .to(sendAddr, sendAmount)
+              // Sign the transaction
+              .sign(privateKey);
+            // Get the hex of the transaction
+            let hex = transaction.serialize();
+            if (transaction) {
+              //Broadcast the transaction
+              BITBOX.RawTransactions.sendRawTransaction(hex).then(
+                result => {
+                  console.log(result);
+                  this.setState({
+                    loading: false
+                  });
+                },
+                err => {
+                  console.log(err);
+                }
+              );
+            } else {
+              console.log("Error: Transaction failed");
+            }
+          } catch (error) {
+            console.error(error);
           }
-        );
+        })();
+        this.setState({ loading: false });
       } catch (error) {
         console.error(error);
       }
     })();
-    this.setState({ loading: false });
   };
 
   render() {

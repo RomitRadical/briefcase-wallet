@@ -42,7 +42,7 @@ export default class Balance extends Component {
   }
 
   componentDidMount() {
-    setInterval(this.getPrice, 10000);
+    setInterval(this.getPrice, 100000);
     setInterval(this.checkNewTx, 10000);
   }
 
