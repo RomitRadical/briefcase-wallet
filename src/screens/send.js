@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import bitcore from "bitcore-lib-cash";
 import { initWallet } from "../scripts/bitcoincash";
 import { Divider } from "semantic-ui-react";
-import { Input, Icon, Button, Popover } from "antd";
+import { Input, Button, Icon } from "antd";
 
 let NETWORK = localStorage.getItem("network");
 
@@ -25,7 +25,8 @@ export default class Send extends Component {
       loading: false,
       sendAddr: "",
       sendAmount: "",
-      fiatSymbol: ""
+      fiatSymbol: "",
+      isContacts: false
     };
   }
 
@@ -62,6 +63,13 @@ export default class Send extends Component {
   onSend = () => {
     this.setState({ loading: true });
     let { sendAddr, sendAmount } = this.state;
+    if (!sendAddr) {
+      this.setState({ loading: false });
+      return console.log("Enter the address");
+    } else if (!sendAmount) {
+      this.setState({ loading: false });
+      return console.log("Enter the amount");
+    }
     let currency,
       price,
       addr,
@@ -85,8 +93,8 @@ export default class Send extends Component {
         // Get current BCH price
         price = await BITBOX.Price.current(currency);
         if (!price) {
-          console.log("Network Error: Price cannot be fetched");
-          return false;
+          this.setState({ loading: false });
+          return console.log("Network Error: Price cannot be fetched");
         }
         // Convert fiat amount to bch amount
         sendAmount /= price;
@@ -117,11 +125,11 @@ export default class Send extends Component {
                 script: utxo.scriptPubKey,
                 satoshis: res.satoshis
               };
-              console.log(details);
               transaction.from(details);
               if (sendAmount < res.satoshis) {
-                return;
+                return false;
               }
+              return true;
             });
 
             // Calulate network fee
@@ -153,31 +161,33 @@ export default class Send extends Component {
               BITBOX.RawTransactions.sendRawTransaction(hex).then(
                 result => {
                   console.log(result);
-                  this.setState({
+                  return this.setState({
                     loading: false
                   });
                 },
                 err => {
                   console.log(err);
+                  return this.setState({ loading: false });
                 }
               );
             } else {
               console.log("Error: Transaction failed");
+              return this.setState({ loading: false });
             }
           } catch (error) {
             console.error(error);
+            return this.setState({ loading: false });
           }
         })();
-        this.setState({ loading: false });
       } catch (error) {
         console.error(error);
+        return this.setState({ loading: false });
       }
     })();
   };
 
   render() {
-    let { sendAddr, sendAmount, loading, fiatSymbol } = this.state;
-
+    let { sendAddr, sendAmount, loading, fiatSymbol, isContacts } = this.state;
     return (
       <div style={styles.container}>
         <Divider horizontal>Send</Divider>
@@ -188,16 +198,6 @@ export default class Send extends Component {
           placeholder="Address"
           defaultValue="bitcoincash:"
           prefix={<Icon type="user" />}
-          suffix={
-            <div>
-              <Popover
-                content="Click to open camera and scan a qr code"
-                title="Scan QR Code"
-              >
-                <Icon type="scan" onClick={this.scanQRCode} />
-              </Popover>
-            </div>
-          }
           value={sendAddr}
           onChange={this.onEnterAddress.bind(this)}
         />
@@ -206,17 +206,7 @@ export default class Send extends Component {
           type="number"
           size="large"
           placeholder="Amount"
-          prefix="$"
-          suffix={
-            <div>
-              <Popover
-                content="Click to send all funds from the wallet"
-                title="Max Amount"
-              >
-                <Icon type="to-top" onClick={this.onMaxAmount} />
-              </Popover>
-            </div>
-          }
+          prefix={fiatSymbol}
           value={sendAmount}
           onChange={this.onEnterAmount.bind(this)}
         />
@@ -229,6 +219,11 @@ export default class Send extends Component {
         >
           Send
         </Button>
+        <div>
+          <Button style={styles.button} block type="primary" size="large">
+            Contacts
+          </Button>
+        </div>
       </div>
     );
   }
@@ -250,5 +245,14 @@ const styles = {
     color: "white",
     marginTop: "15px",
     padding: "0 50px"
+  },
+  buttonRound: {
+    backgroundColor: "#0492CE",
+    color: "white",
+    marginTop: "13px",
+    marginLeft: "5px"
+  },
+  row: {
+    display: "flex"
   }
 };
