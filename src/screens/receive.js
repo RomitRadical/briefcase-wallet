@@ -39,16 +39,12 @@ export default class Receive extends Component {
     console.log("Address copied");
   };
 
-  renderContent = () => {
+  renderCopyButton = () => {
     let { addr } = this.state;
     if (isMobile) {
       return (
         <div>
-          <Button
-            style={styles.button}
-            shape="round"
-            onClick={this.copyAddress}
-          >
+          <Button size="large" style={styles.button} onClick={this.copyAddress}>
             Share
           </Button>
         </div>
@@ -57,6 +53,7 @@ export default class Receive extends Component {
     return (
       <div>
         <Button
+          size="large"
           style={styles.button}
           onClick={() => navigator.clipboard.writeText(addr)}
         >
@@ -74,8 +71,8 @@ export default class Receive extends Component {
         <div>
           <h4>Your Bitcoin Cash Address:</h4>
           <QRCode style={styles.qr} value={addr} />
-          <div>{addr}</div>
-          <div>{this.renderContent()}</div>
+          <div style={{ marginTop: "5px" }}>{addr}</div>
+          <div>{this.renderCopyButton()}</div>
         </div>
       </div>
     );
