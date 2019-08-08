@@ -22,6 +22,8 @@ notification.config({
   placement: "bottomRight"
 });
 
+const addr = initWallet(localStorage.getItem("wallet"));
+
 export default class Balance extends Component {
   constructor(props) {
     super(props);
@@ -36,14 +38,12 @@ export default class Balance extends Component {
   }
 
   componentWillMount() {
-    let addr = initWallet(localStorage.getItem("wallet"));
-    this.getPrice();
-    this.getBalance(addr);
+    this.getPrice(addr);
   }
 
   componentDidMount() {
     setInterval(this.getPrice, 100000);
-    setInterval(this.checkNewTx, 10000);
+    setInterval(this.checkNewTx, 2000);
   }
 
   getPrice = () => {
@@ -51,28 +51,27 @@ export default class Balance extends Component {
     if (!currency) {
       currency = "INR";
     }
-    (async () => {
-      try {
-        let price = await BITBOX.Price.current(currency);
-        if (!price) {
+    fetch(
+      "https://api.coingecko.com/api/v3/coins/bitcoin-cash"
+    )
+      .then(res => res.json())
+      .then(json => {
+        if (!json) {
           console.log("Network Error: Price cannot be fetched");
           return false;
         }
+        let price = json.market_data.current_price[currency.toLowerCase()];
+        this.getBalance(price)
         this.setState({
           price
-        });
-        return true;
-      } catch (error) {
-        console.error(error);
-      }
-    })();
+        })
+      });
   };
 
-  getBalance = addr => {
+  getBalance = price => {
     (async () => {
       try {
         let details = await BITBOX.Address.details(addr);
-        let price = this.state.price;
         this.setState({
           bal: Number(details.balance + details.unconfirmedBalance),
           fiatBal: (details.balance + details.unconfirmedBalance) * price
@@ -86,7 +85,6 @@ export default class Balance extends Component {
   checkNewTx = () => {
     (async () => {
       try {
-        let addr = initWallet(localStorage.getItem("wallet"));
         let details = await BITBOX.Address.details(addr);
         let price = this.state.price;
         if (details.balance + details.unconfirmedBalance > this.state.bal) {

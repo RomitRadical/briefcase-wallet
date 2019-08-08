@@ -8,20 +8,13 @@ if (!NETWORK) {
   NETWORK = "testnet";
 }
 
-let BITBOX;
-let BITBOXSDK = require("bitbox-sdk");
-
 let detailsURL;
 let txDetailsURL;
 
 if (NETWORK === "testnet") {
-  BITBOX = new BITBOXSDK({
-    restURL: "https://trest.bitcoin.com/v2/"
-  });
   detailsURL = "https://trest.bitcoin.com/v2/address/details/";
   txDetailsURL = "https://trest.bitcoin.com/v2/transaction/details/";
 } else {
-  BITBOX = new BITBOXSDK();
   detailsURL = "https://rest.bitcoin.com/v2/address/details/";
   txDetailsURL = "https://rest.bitcoin.com/v2/transaction/details/";
 }
@@ -58,89 +51,91 @@ export default class History extends Component {
     if (!currency) {
       currency = "INR";
     }
-    (async () => {
-      try {
-        let price = await BITBOX.Price.current(currency);
-        if (!price) {
-          console.log("Network Error: Price cannot be fetched");
-          return false;
-        }
-        this.getTxs(price);
-        this.setState({ loading: false });
-      } catch (error) {
-        console.error(error);
-      }
-    })();
-  };
-
-  getTxs = price => {
-    this.setState({ loading: true });
-    let time;
-    let txobj = {};
-    let transactions = [];
-    let amount = 0;
-    let address = [];
-    let addr = initWallet(localStorage.getItem("wallet"));
-    fetch(detailsURL + addr)
+    fetch(
+      "https://api.coingecko.com/api/v3/coins/bitcoin-cash"
+    )
       .then(res => res.json())
       .then(json => {
         if (!json) {
-          console.log("Error: Network Error");
-        } else if (json.transactions.length < 1) {
-          console.log("No Transactions Found");
-        } else {
-          json.transactions.map(tx => {
-            fetch(txDetailsURL + tx)
-              .then(res => res.json())
-              .then(json => {
-                if (json.vin[0].cashAddress === addr) {
-                  time = new Date(json.time * 1000);
-                  amount = json.vout[0].value;
-                  txobj = {
-                    type: "Sent",
-                    amount: parseFloat(amount * price).toFixed(2),
-                    confirmations: json.confirmations,
-                    fees: json.fees,
-                    txid: json.txid,
-                    time: time.toGMTString()
-                  };
-                  transactions.push(txobj);
-                } else {
-                  time = new Date(json.time * 1000);
-                  json.vout.map(vout => {
-                    if (!vout.scriptPubKey.cashAddrs) {
-                      return false;
-                    }
-                    address = vout.scriptPubKey.cashAddrs;
-                    if (address.indexOf(addr) > -1) {
-                      amount = vout.value;
-                    }
-                    return true;
-                  });
-                  txobj = {
-                    type: "Received",
-                    amount: parseFloat(amount * price).toFixed(2),
-                    confirmations: json.confirmations,
-                    fees: json.fees,
-                    txid: json.txid,
-                    time: time.toGMTString()
-                  };
-                  transactions.push(txobj);
-                }
-                transactions = transactions
-                  .sort(function(a, b) {
-                    return new Date(a.time) - new Date(b.time);
-                  })
-                  .reverse();
-                this.setState({
-                  transactions: transactions,
-                  isLoading: false
-                });
-              });
-            return true;
-          });
+          console.log("Network Error: Price cannot be fetched");
+          return false;
         }
+        let price = json.market_data.current_price[currency.toLowerCase()];
+        this.getTxs(price);
+        this.setState({ loading: false, price });
       });
+  };
+
+  getTxs = price => {
+    (async () => {
+      this.setState({ loading: true });
+      let time;
+      let txobj = {};
+      let transactions = [];
+      let amount = 0;
+      let address = [];
+      let addr = initWallet(localStorage.getItem("wallet"));
+      fetch(detailsURL + addr)
+        .then(res => res.json())
+        .then(json => {
+          if (!json.transactions) {
+            return console.log("Error: Network Error");
+          } else if (json.transactions.length < 1) {
+            return console.log("No Transactions Found");
+          } else {
+            json.transactions.map(tx => {
+              fetch(txDetailsURL + tx)
+                .then(res => res.json())
+                .then(json => {
+                  if (json.vin[0].cashAddress === addr) {
+                    time = new Date(json.time * 1000);
+                    amount = json.vout[0].value;
+                    txobj = {
+                      type: "Sent",
+                      amount: parseFloat(amount * price).toFixed(2),
+                      confirmations: json.confirmations,
+                      fees: json.fees,
+                      txid: json.txid,
+                      time: time.toGMTString()
+                    };
+                    transactions.push(txobj);
+                  } else {
+                    time = new Date(json.time * 1000);
+                    json.vout.map(vout => {
+                      if (!vout.scriptPubKey.cashAddrs) {
+                        return false;
+                      }
+                      address = vout.scriptPubKey.cashAddrs;
+                      if (address.indexOf(addr) > -1) {
+                        amount = vout.value;
+                      }
+                      return true;
+                    });
+                    txobj = {
+                      type: "Received",
+                      amount: parseFloat(amount * price).toFixed(2),
+                      confirmations: json.confirmations,
+                      fees: json.fees,
+                      txid: json.txid,
+                      time: time.toGMTString()
+                    };
+                    transactions.push(txobj);
+                  }
+                  transactions = transactions
+                    .sort(function (a, b) {
+                      return new Date(a.time) - new Date(b.time);
+                    })
+                    .reverse();
+                  this.setState({
+                    transactions: transactions,
+                    isLoading: false
+                  });
+                });
+              return true;
+            });
+          }
+        });
+    })()
   };
 
   render() {
@@ -148,7 +143,7 @@ export default class History extends Component {
     return (
       <div style={styles.container}>
         <Divider horizontal>History</Divider>
-        {transactions.map(tx => (
+        {transactions ? (transactions.map(tx => (
           <div
             style={{
               textAlign: "center",
@@ -164,7 +159,7 @@ export default class History extends Component {
             <div style={styles.spacer} /> {fiatSymbol}
             {tx.amount}
           </div>
-        ))}
+        ))) : (<div>No Transactions Found</div>)}
       </div>
     );
   }

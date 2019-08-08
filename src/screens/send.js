@@ -2,31 +2,35 @@ import React, { Component } from "react";
 import bitcore from "bitcore-lib-cash";
 import { initWallet } from "../scripts/bitcoincash";
 import { Divider } from "semantic-ui-react";
-import { Input, Button, Icon } from "antd";
+import { Icon, Button } from "antd";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
+import TextField from '@material-ui/core/TextField';
+import InputAdornment from '@material-ui/core/InputAdornment';
+import QrReader from 'react-qr-reader'
 
 let NETWORK = localStorage.getItem("network");
 
 let BITBOXSDK = require("bitbox-sdk");
-
-let BITBOX;
+let bitbox;
 
 if (NETWORK === "testnet") {
-  BITBOX = new BITBOXSDK({
+  bitbox = new BITBOXSDK({
     restURL: "https://trest.bitcoin.com/v2/"
   });
 } else {
-  BITBOX = new BITBOXSDK();
+  bitbox = new BITBOXSDK();
 }
 
 export default class Send extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      loading: false,
+      isLoading: false,
       sendAddr: "",
       sendAmount: "",
       fiatSymbol: "",
-      isContacts: false
+      isContacts: false,
+      isQRModalOpen: false
     };
   }
 
@@ -40,14 +44,6 @@ export default class Send extends Component {
     });
   }
 
-  scanQRCode = () => {
-    console.log("Scan");
-  };
-
-  onMaxAmount = () => {
-    console.log("Max Amount");
-  };
-
   onEnterAddress = addr => {
     this.setState({
       sendAddr: addr.target.value
@@ -60,170 +56,216 @@ export default class Send extends Component {
     });
   };
 
+  toggleQRModal = () => {
+    this.setState({
+      isQRModalOpen: !this.state.isQRModalOpen
+    })
+  }
+
+  scanQRCode = (data) => {
+    if (data) {
+      this.setState({
+        result: data
+      })
+    }
+  };
+
+  handleError = err => {
+    console.error(err)
+  }
+
   onSend = () => {
-    this.setState({ loading: true });
+    this.setState({ isLoading: true });
     let { sendAddr, sendAmount } = this.state;
     if (!sendAddr) {
-      this.setState({ loading: false });
+      this.setState({ isLoading: false });
       return console.log("Enter the address");
     } else if (!sendAmount) {
-      this.setState({ loading: false });
+      this.setState({ isLoading: false });
       return console.log("Enter the amount");
     }
-    let currency,
-      price,
-      addr,
-      seed,
-      utxo,
-      value,
-      hash,
-      bn,
-      privateKey,
-      transaction,
-      byteCount,
-      details,
-      change,
-      hex;
-    currency = localStorage.getItem("currency");
+    let fee = 0;
+    let satoshis = 0;
+    let details = {};
+    let currency = localStorage.getItem("currency");
     if (!currency) {
       currency = "INR";
     }
     (async () => {
       try {
         // Get current BCH price
-        price = await BITBOX.Price.current(currency);
-        if (!price) {
-          this.setState({ loading: false });
-          return console.log("Network Error: Price cannot be fetched");
-        }
-        // Convert fiat amount to bch amount
-        sendAmount /= price;
-        // Convert BCH to satoshis
-        sendAmount = BITBOX.BitcoinCash.toSatoshi(sendAmount.toFixed(8));
-        addr = initWallet(localStorage.getItem("wallet"));
-        seed = localStorage.getItem("wallet");
-        (async () => {
-          try {
-            //Get the utxo details of the address
-            utxo = await BITBOX.Address.utxo(addr);
-            //console.log(utxo);
-            // Create a transaction object
-            transaction = new bitcore.Transaction();
-
-            // Get the wallet's private key
-            value = new Buffer(seed);
-            hash = bitcore.crypto.Hash.sha256(value);
-            bn = bitcore.crypto.BN.fromBuffer(hash);
-            privateKey = new bitcore.PrivateKey(bn).toString();
-
-            // Add inputs for the transaction
-            utxo.utxos.map(res => {
-              details = {
-                txId: res.txid,
-                outputIndex: res.vout,
-                address: utxo.cashAddress,
-                script: utxo.scriptPubKey,
-                satoshis: res.satoshis
-              };
-              transaction.from(details);
-              if (sendAmount < res.satoshis) {
-                return false;
-              }
-              return true;
-            });
-
-            // Calulate network fee
-            change = details.satoshis - sendAmount;
-            if (change > 0) {
-              byteCount = BITBOX.BitcoinCash.getByteCount(
-                { P2PKH: 1 },
-                { P2PKH: 2 }
-              );
-              //If change exists send change to self
-              transaction.change(addr);
-            } else {
-              byteCount = BITBOX.BitcoinCash.getByteCount(
-                { P2PKH: 1 },
-                { P2PKH: 1 }
-              );
+        fetch(
+          "https://api.coingecko.com/api/v3/coins/bitcoin-cash"
+        )
+          .then(res => res.json())
+          .then(json => {
+            if (!json) {
+              console.log("Network Error: Price could not be fetched");
+              return false;
             }
-            // Add fee to transaction
-            transaction
-              .fee(byteCount)
-              // Add the receiving address and amount
-              .to(sendAddr, sendAmount)
-              // Sign the transaction
-              .sign(privateKey);
-            // Get the hex of the transaction
-            hex = transaction.serialize();
-            if (transaction) {
-              //Broadcast the transaction
-              BITBOX.RawTransactions.sendRawTransaction(hex).then(
-                result => {
-                  console.log(result);
-                  return this.setState({
-                    loading: false
-                  });
-                },
-                err => {
-                  console.log(err);
-                  return this.setState({ loading: false });
+            let price = json.market_data.current_price[currency.toLowerCase()];
+            // Convert fiat amount to bch amount
+            sendAmount /= price;
+            // Convert BCH to satoshis
+            sendAmount = bitbox.BitcoinCash.toSatoshi(sendAmount.toFixed(8));
+            let seed = localStorage.getItem("wallet");
+            let addr = initWallet(seed);
+            (async () => {
+              try {
+                //Get the utxo details of the address
+                let utxo = await bitbox.Address.utxo(addr);
+                // Create a transaction object
+                let transaction = new bitcore.Transaction();
+
+                // Get the wallet's private key
+                let rootSeed = bitbox.Mnemonic.toSeed(seed);
+                let hd = bitcore.HDPrivateKey.fromSeed(rootSeed).deriveChild("m/44'/145'/0'/0'/0")
+                let wif = hd.privateKey.toWIF();
+                let privateKey = new bitcore.PrivateKey(wif).toString();
+
+                // Add inputs for the transaction
+                for (let i = 0; i < utxo.utxos.length; i++) {
+                  details = {
+                    txId: utxo.utxos[i].txid,
+                    outputIndex: utxo.utxos[i].vout,
+                    address: utxo.cashAddress,
+                    script: utxo.scriptPubKey,
+                    satoshis: utxo.utxos[i].satoshis
+                  };
+                  transaction.from(details);
+                  satoshis += details.satoshis;
+                  fee += bitbox.BitcoinCash.getByteCount(
+                    { P2PKH: i + 1 },
+                    { P2PKH: 2 }
+                  );
+                  console.log(fee)
+                  sendAmount += fee;
+                  if (satoshis >= sendAmount) {
+                    sendAmount -= fee;
+                    break;
+                  }
                 }
-              );
-            } else {
-              console.log("Error: Transaction failed");
-              return this.setState({ loading: false });
-            }
-          } catch (error) {
-            console.error(error);
-            return this.setState({ loading: false });
-          }
-        })();
+                // Calulate network fee
+                let change = details.satoshis - (sendAmount + fee);
+                if (change > 0) {
+                  //If change exists send change to self
+                  transaction.change(addr, change);
+                }
+                // Add fee to transaction
+                transaction
+                  .fee(fee)
+                  // Add the receiving address and amount
+                  .to(sendAddr, sendAmount)
+                  // Sign the transaction
+                  .sign(privateKey);
+                // Get the hex of the transaction
+                let hex = transaction.serialize();
+                if (transaction) {
+                  //Broadcast the transaction
+                  bitbox.RawTransactions.sendRawTransaction(hex).then(
+                    result => {
+                      console.log(result);
+                      return this.setState({
+                        isLoading: false
+                      });
+                    },
+                    err => {
+                      console.log(err);
+                      return this.setState({ isLoading: false });
+                    }
+                  );
+                } else {
+                  console.log("Error: Transaction failed");
+                  return this.setState({ isLoading: false });
+                }
+              } catch (error) {
+                console.error(error);
+                return this.setState({ isLoading: false });
+              }
+            })();
+          });
       } catch (error) {
         console.error(error);
-        return this.setState({ loading: false });
+        return this.setState({ isLoading: false });
       }
     })();
   };
 
+  onSendMax = () => { }
+
   render() {
-    let { sendAddr, sendAmount, loading, fiatSymbol, isContacts } = this.state;
+    let { isLoading, fiatSymbol, isQRModalOpen } = this.state;
     return (
-      <div style={styles.container}>
-        <Divider horizontal>Send</Divider>
-        <Input
-          style={styles.input}
-          type="text"
-          size="large"
-          placeholder="Address"
-          defaultValue="bitcoincash:"
-          prefix={<Icon type="user" />}
-          value={sendAddr}
-          onChange={this.onEnterAddress.bind(this)}
-        />
-        <Input
-          style={styles.input}
-          type="number"
-          size="large"
-          placeholder="Amount"
-          prefix={fiatSymbol}
-          value={sendAmount}
-          onChange={this.onEnterAmount.bind(this)}
-        />
-        <Button
-          style={styles.button}
-          size="large"
-          type="primary"
-          loading={loading}
-          onClick={this.onSend}
-        >
-          Send
+      <div>
+
+        {/* Main View */}
+        <div style={styles.container}>
+          <Divider horizontal>Send</Divider>
+          <TextField
+            fullWidth
+            style={styles.input}
+            type="text"
+            onChange={this.onEnterAddress.bind(this)}
+            margin="normal"
+            variant="outlined"
+            placeholder="Address"
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><Icon type="user" /></InputAdornment>,
+              endAdornment: <InputAdornment position="end">
+                <Icon onClick={this.toggleQRModal} style={styles.scan} type="scan" /></InputAdornment>,
+            }}
+          />
+          <TextField
+            fullWidth
+            style={styles.input}
+            type="number"
+            placeholder="Amount"
+            margin="normal"
+            variant="outlined"
+            onChange={this.onEnterAmount.bind(this)}
+            InputProps={{
+              startAdornment: <InputAdornment position="start">{fiatSymbol}</InputAdornment>,
+              endAdornment: <InputAdornment position="end">
+                <Button
+                  style={{
+                    backgroundColor: "#0492CE",
+                    color: "white",
+                  }}
+                  size="sm"
+                  type="primary"
+                  loading={isLoading}
+                  onClick={this.onSendMax}
+                >
+                  Max
+        </Button></InputAdornment>,
+            }}
+          />
+          <Button
+            style={styles.button}
+            size="large"
+            type="primary"
+            loading={isLoading}
+            onClick={this.onSend}
+          >
+            Send
         </Button>
-        <div>
-          <Button style={styles.button} block type="primary" size="large">
-            Contacts
-          </Button>
         </div>
+
+        {/** QR Code Modal */}
+        <div>
+          <Modal isOpen={isQRModalOpen} toggle={this.toggleQRModal}>
+            <ModalHeader toggle={this.toggleQRModal}>Scan QR Code</ModalHeader>
+            <ModalBody>
+              <QrReader
+                delay={300}
+                onError={this.handleError}
+                onScan={this.scanQRCode}
+                style={{ width: '100%' }}
+              />
+            </ModalBody>
+          </Modal>
+        </div>
+
       </div>
     );
   }
@@ -238,13 +280,21 @@ const styles = {
     margin: "0 auto"
   },
   input: {
-    marginTop: "10px"
+    marginTop: "10px",
+    color: "#0492CE"
   },
   button: {
     backgroundColor: "#0492CE",
     color: "white",
     marginTop: "15px",
     padding: "0 50px"
+  },
+  scan: {
+    marginRight: "3px", fontSize: '18px',
+    backgroundColor: "#0492CE",
+    color: "white",
+    padding: "7px 19px",
+    borderRadius: "3px"
   },
   buttonRound: {
     backgroundColor: "#0492CE",
@@ -253,6 +303,8 @@ const styles = {
     marginLeft: "5px"
   },
   row: {
-    display: "flex"
+    display: "flex",
+    flexDirection: "row",
+    maxheight: "50px"
   }
 };

@@ -5,20 +5,22 @@ if (!NETWORK) {
   NETWORK = "testnet";
 }
 
-let BITBOX;
-let BITBOXSDK = require("bitbox-sdk");
+let BITBOX = require('bitbox-sdk');
+let bitbox;
 
-if (NETWORK === "testnet") {
-  BITBOX = new BITBOXSDK({
+if (NETWORK === "mainnet") {
+  bitbox = new BITBOX();
+} else {
+  bitbox = new BITBOX({
     restURL: "https://trest.bitcoin.com/v2/"
   });
-  bitcore.Networks.defaultNetwork = bitcore.Networks.testnet;
-} else {
-  BITBOX = new BITBOXSDK();
+
 }
 
+bitcore.Networks.defaultNetwork = bitcore.Networks.testnet;
+
 export function createWallet() {
-  let seed = BITBOX.Mnemonic.generate(128);
+  let seed = bitbox.Mnemonic.generate(128);
   if (!seed) {
     console.log("Network Error: New wallet could not be created");
     return false;
@@ -32,15 +34,8 @@ export function initWallet(seed) {
     console.log("Error: No seed detected");
     return false;
   }
-  //let seedBuffer = BITBOX.Mnemonic.toSeed(seed);
-  // let hdNode = BITBOX.HDNode.fromSeed(seedBuffer, "testnet");
-  // let account = BITBOX.HDNode.derivePath(hdNode, "m/44'/145'/0'");
-  // let change = BITBOX.HDNode.derivePath(account, "0/0");
-  // let cashAddress = BITBOX.HDNode.toCashAddress(change);
-  var value = new Buffer(seed);
-  let hash = bitcore.crypto.Hash.sha256(value);
-  let bn = bitcore.crypto.BN.fromBuffer(hash);
-  var address = new bitcore.PrivateKey(bn).toAddress();
-  let cashAddress = address.toString();
+  let rootSeed = bitbox.Mnemonic.toSeed(seed);
+  let hd = bitcore.HDPrivateKey.fromSeed(rootSeed).deriveChild("m/44'/145'/0'/0'/0")
+  let cashAddress = hd.publicKey.toAddress().toString();
   return cashAddress;
 }
